@@ -4,6 +4,7 @@ from time import sleep
 from kivy.storage.jsonstore import JsonStore
 from plyer import notification
 
+from android.broadcast import BroadcastReceiver
 from ethereum_utils import AccountUtils
 from etheroll.constants import KEYSTORE_DIR_SUFFIX
 from etheroll.patches import patch_find_library_android
@@ -11,7 +12,8 @@ from pyetheroll.constants import ROUND_DIGITS, ChainID
 from pyetheroll.etheroll import Etheroll
 
 patch_find_library_android()
-PULL_FREQUENCY_SECONDS = 10
+# TODO: simplified to debug #103
+PULL_FREQUENCY_SECONDS = 3
 
 
 class MonitorRollsService():
@@ -27,9 +29,13 @@ class MonitorRollsService():
         """
         Blocking pull loop call.
         """
+        i = 0
         while True:
-            self.pull_accounts_rolls()
+            # TODO: simplified to debug #103
+            # self.pull_accounts_rolls()
+            print('pull_accounts_rolls {}'.format(i))
             sleep(PULL_FREQUENCY_SECONDS)
+            i += 1
 
     @property
     def pyetheroll(self):
@@ -161,5 +167,24 @@ def main():
     service.start()
 
 
+def on_broadcast(self, context, intent):
+    """
+    Restarts the service.
+    """
+    # extras = intent.getExtras()
+    main()
+
+
+def start_broadcast_receiver(self):
+    """
+    Makes sure the background roll pulling service stays up even when the
+    main application gets killed.
+    """
+    self.broadcast_receiver = BroadcastReceiver(
+        self.on_broadcast, actions=['restart_roll_pulling_service'])
+    self.broadcast_receiver.start()
+
+
 if __name__ == '__main__':
     main()
+    start_broadcast_receiver()

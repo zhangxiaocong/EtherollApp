@@ -495,10 +495,26 @@ class EtherollApp(App):
             argument = ''
             service.start(mActivity, argument)
 
+    def on_stop(self):
+        """
+        Attempts to broadcast a message so the roll pulling service restarts
+        after being killed with the app launching it, refs:
+        https://github.com/AndreMiras/EtherollApp/issues/103
+        """
+        if platform == 'android':
+            from jnius import autoclass
+            Intent = autoclass('android.content.Intent')
+            broadcast_intent = Intent('restart_roll_pulling_service')
+            # TOdo give plyer shortcut a try:
+            # from plyer.platforms.android import activity
+            mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+            mActivity.sendBroadcast(broadcast_intent)
+
 
 def main():
     # only send Android errors to Sentry
     in_debug = platform != "android"
+    in_debug = True
     client = configure_sentry(in_debug)
     try:
         EtherollApp().run()
